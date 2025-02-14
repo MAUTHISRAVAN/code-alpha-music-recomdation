@@ -1,0 +1,69 @@
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.preprocessing import LabelEncoder
+
+# Example dataset (replace with actual dataset)
+# Assuming columns: user_id, song_id, timestamp, repeat_play (1 or 0)
+data = pd.DataFrame({
+    'user_id': [1, 2, 1, 3, 2, 1],
+    'song_id': [101, 102, 101, 103, 104, 101],
+    'timestamp': ['2025-01-01', '2025-01-02', '2025-01-10', '2025-01-05', '2025-01-15', '2025-01-20'],
+    'repeat_play': [1, 0, 1, 0, 0, 1]
+})
+
+# Convert timestamps to datetime
+data['timestamp'] = pd.to_datetime(data['timestamp'])
+
+# Feature engineering: Extract date-related features (day, month, etc.)
+data['day_of_week'] = data['timestamp'].dt.dayofweek
+data['hour_of_day'] = data['timestamp'].dt.hour
+
+# Encoding categorical data (user_id, song_id) into numerical values
+le_user = LabelEncoder()
+le_song = LabelEncoder()
+data['user_id_encoded'] = le_user.fit_transform(data['user_id'])
+data['song_id_encoded'] = le_song.fit_transform(data['song_id'])
+
+# Selecting features and target
+X = data[['user_id_encoded', 'song_id_encoded', 'day_of_week', 'hour_of_day']]
+y = data['repeat_play']
+
+# Splitting data into training and testing sets
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Initialize the model (Random Forest)
+model = RandomForestClassifier(n_estimators=100, random_state=42)
+
+# Train the model
+model.fit(X_train, y_train)
+
+# Make predictions on the test set
+y_pred = model.predict(X_test)
+
+# Evaluate the model's performance
+print("Accuracy Score:", accuracy_score(y_test, y_pred))
+print("Classification Report:\n", classification_report(y_test, y_pred))
+
+# Example of making a prediction for a new user-song pair
+# New data: User 1, Song 101, played on 2025-01-15 (you can modify these values)
+new_data = pd.DataFrame({
+    'user_id': [1],
+    'song_id': [101],
+    'timestamp': ['2025-01-15']
+})
+
+# Process the new data
+new_data['timestamp'] = pd.to_datetime(new_data['timestamp'])
+new_data['day_of_week'] = new_data['timestamp'].dt.dayofweek
+new_data['hour_of_day'] = new_data['timestamp'].dt.hour
+new_data['user_id_encoded'] = le_user.transform(new_data['user_id'])
+new_data['song_id_encoded'] = le_song.transform(new_data['song_id'])
+
+# Features for prediction
+X_new = new_data[['user_id_encoded', 'song_id_encoded', 'day_of_week', 'hour_of_day']]
+
+# Predict if the user will repeat the song
+prediction = model.predict(X_new)
+print(f"Prediction (1 = repeat, 0 = no repeat): {prediction[0]}")
